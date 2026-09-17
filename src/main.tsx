@@ -19,6 +19,7 @@ const ClueBoard = lazy(() => import("./pages/ClueBoard.tsx"));
 const VocabClues = lazy(() => import("./pages/VocabClues.tsx"));
 const Progress = lazy(() => import("./pages/Progress.tsx"));
 const TutorInsights = lazy(() => import("./pages/TutorInsights.tsx"));
+const CaseComplete = lazy(() => import("./pages/CaseComplete.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 
 function RouteLoading() {
@@ -118,6 +119,7 @@ const gamePages = [
   { path: "/vocabulary", Component: VocabClues },
   { path: "/progress", Component: Progress },
   { path: "/tutor", Component: TutorInsights },
+  { path: "/complete", Component: CaseComplete },
 ];
 
 createRoot(document.getElementById("root")!).render(

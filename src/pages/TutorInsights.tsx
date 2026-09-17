@@ -65,6 +65,7 @@ export default function TutorInsights() {
         caseName: currentCase.title,
         totalScenes: currentCase.scenes.length,
         cluesFound: state.cluesFound.length,
+        readAloudCount: state.readAloudCount,
       });
       setCard(result as unknown as TutorCard);
     } catch (err) {

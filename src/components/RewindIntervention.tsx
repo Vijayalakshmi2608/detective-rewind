@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGame, type RewindState } from "../lib/gameContext";
-import { caseData } from "../lib/gameData";
 import type { SceneType } from "../lib/gameData";
 
 type OptionItem = SceneType["options"][number];
@@ -23,13 +22,13 @@ type Props = {
 };
 
 export function RewindIntervention({ rewind, onRetryComplete }: Props) {
-  const { retryQuestion, dismissRewind } = useGame();
+  const { state, retryQuestion, dismissRewind } = useGame();
   const [phase, setPhase] = useState<"rewind" | "retry" | "result">(
     "rewind",
   );
   const [retryCorrect, setRetryCorrect] = useState<boolean | null>(null);
 
-  const scene = caseData.scenes.find((s) => s.id === rewind.sceneId);
+  const scene = state.currentCase.scenes.find((s) => s.id === rewind.sceneId);
   if (!scene) return null;
 
   const handleRetry = (option: OptionItem) => {

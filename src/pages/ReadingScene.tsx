@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router";
 import { useGame } from "../lib/gameContext";
 import { RewindIntervention } from "../components/RewindIntervention";
 import { ReadAloudPanel } from "../components/ReadAloudPanel";
-import { caseData } from "../lib/gameData";
 import type { SceneType } from "../lib/gameData";
 import { useAction } from "convex/react";
 import { api } from "../convex/_generated/api";
@@ -21,6 +21,7 @@ import {
   Brain,
   Unlock,
   Loader2,
+  Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -80,10 +81,13 @@ function StepTracker({ current }: { current: 1 | 2 | 3 }) {
 }
 
 export default function ReadingScene() {
+  const navigate = useNavigate();
   const {
     state,
     answerQuestion,
+    recordReadAloud,
     advanceScene,
+    completeCase,
     isCaseComplete,
     triggerRewind,
     dismissRewind,
@@ -91,6 +95,7 @@ export default function ReadingScene() {
 
   const evaluateReasoning = useAction(api.tutorInsights.evaluateReasoning);
 
+  const currentCase = state.currentCase;
   const currentSceneIndex = state.currentSceneIndex;
   const { currentScene, answeredQuestions, rewind } = state;
   const isAnswered = answeredQuestions[currentScene.id];
@@ -136,8 +141,9 @@ export default function ReadingScene() {
               durationSec: readingMetrics.durationSec,
             }
           : undefined,
-        caseTitle: caseData.title,
+        caseTitle: currentCase.title,
         sceneLocation: currentScene.location,
+        caseFocus: state.currentCaseLevel.focus.join(" · "),
       })) as unknown as AIEval;
       setAiEval(evalResult);
     } catch {
@@ -211,7 +217,7 @@ export default function ReadingScene() {
                 <p className="text-xs font-medium text-muted-foreground">
                   {currentScene.location}
                   <span className="mx-1.5 text-border">·</span>
-                  Scene {currentSceneIndex + 1} of {caseData.scenes.length}
+                  Scene {currentSceneIndex + 1} of {currentCase.scenes.length}
                 </p>
               </div>
             </div>
@@ -246,6 +252,7 @@ export default function ReadingScene() {
                   onComplete={(m) => {
                     setReadingMetrics(m);
                     setHasRead(true);
+                    recordReadAloud();
                   }}
                 />
               </div>
@@ -488,15 +495,16 @@ export default function ReadingScene() {
                 >
                   <button
                     onClick={() => {
-                      setShowResult(false);
-                      setSelectedOption(null);
-                      setFeedbackPhase(null);
-                      setAiEval(null);
-                      setHasRead(false);
-                      setReadingMetrics(null);
                       if (isCaseComplete()) {
-                        window.location.href = "/progress";
+                        completeCase();
+                        navigate("/complete");
                       } else {
+                        setShowResult(false);
+                        setSelectedOption(null);
+                        setFeedbackPhase(null);
+                        setAiEval(null);
+                        setHasRead(false);
+                        setReadingMetrics(null);
                         advanceScene();
                       }
                     }}
@@ -504,8 +512,8 @@ export default function ReadingScene() {
                   >
                     {isCaseComplete() ? (
                       <>
-                        View Investigation Results
-                        <CheckCircle2 className="h-4 w-4" />
+                        View Case Summary
+                        <Trophy className="h-4 w-4" />
                       </>
                     ) : (
                       <>

@@ -43,6 +43,16 @@ export type ErrorPattern = {
   description: string;
 };
 
+// ─── Skill labels (shared UI) ───────────────────────────────────
+
+export const SKILL_LABELS: Record<SkillDimension, string> = {
+  comprehension: "Literal Comprehension",
+  inference: "Inference",
+  vocabulary: "Vocabulary",
+  evidenceAnalysis: "Evidence Analysis",
+  deduction: "Deduction",
+};
+
 // ─── Map scenes to skill dimensions ─────────────────────────────
 
 export const SCENE_SKILL_MAP: Record<string, SkillDimension> = {
