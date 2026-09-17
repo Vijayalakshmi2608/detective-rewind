@@ -43,7 +43,7 @@ async function callNemotron(prompt: string, apiKey: string): Promise<string> {
       "X-Title": "Detective Rewind Tutor",
     },
     body: JSON.stringify({
-      model: "nvidia/nemotron-ultra-253b",
+      model: "nvidia/nemotron-3-super-120b-a12b:free",
       messages: [
         {
           role: "system",
@@ -155,7 +155,8 @@ export const generateTutorCard = action({
     cluesFound: v.number(),
   },
   handler: async (_ctx, args): Promise<TutorCard> => {
-    const apiKey = process.env.OPENROUTER_API_KEY;
+    // Trim whitespace/quotes that can sneak in when pasting keys
+    const apiKey = process.env.OPENROUTER_API_KEY?.trim().replace(/^["']|["']$/g, "");
 
     if (!apiKey) {
       // Graceful fallback when no API key is configured
@@ -188,9 +189,61 @@ export const generateTutorCard = action({
 
     const prompt = buildPrompt(args);
     const raw = await callNemotron(prompt, apiKey);
+    console.log("[tutorInsights] raw model output (first 500 chars):", raw.slice(0, 500));
 
-    try {
-      const parsed = JSON.parse(raw) as TutorCard;
+    // Reasoning models (Nemotron etc.) may wrap output in <think>...</think>,
+    // add prose, or emit doubled braces like {\n{...}. Strategy: clean the
+    // text, then try parsing a brace-matched object starting at EVERY '{'
+    // until one yields valid JSON.
+    const parseModelJson = (text: string): TutorCard | null => {
+      const cleaned = text
+        .replace(/<think>[\s\S]*?<\/think>/gi, "")
+        .replace(/```json\s*/gi, "")
+        .replace(/```\s*/gi, "")
+        .trim();
+
+      // Find matching close brace for an object starting at `start`
+      const matchBraces = (start: number): string | null => {
+        let depth = 0;
+        let inString = false;
+        let escaped = false;
+        for (let i = start; i < cleaned.length; i++) {
+          const ch = cleaned[i];
+          if (escaped) {
+            escaped = false;
+          } else if (ch === "\\") {
+            escaped = true;
+          } else if (ch === '"') {
+            inString = !inString;
+          } else if (!inString) {
+            if (ch === "{") depth++;
+            else if (ch === "}") {
+              depth--;
+              if (depth === 0) return cleaned.slice(start, i + 1);
+            }
+          }
+        }
+        return null;
+      };
+
+      for (let i = 0; i < cleaned.length; i++) {
+        if (cleaned[i] === "{") {
+          const candidate = matchBraces(i);
+          if (candidate) {
+            try {
+              return JSON.parse(candidate) as TutorCard;
+            } catch {
+              // keep scanning from the next '{'
+            }
+          }
+        }
+      }
+      return null;
+    };
+
+    const parsed = parseModelJson(raw);
+
+    if (parsed) {
       // Validate required fields
       return {
         strength: parsed.strength || "Insufficient data to determine",
@@ -203,18 +256,18 @@ export const generateTutorCard = action({
         confidence: parsed.confidence || "low",
         reasoning: parsed.reasoning || "AI-generated assessment",
       };
-    } catch {
-      return {
-        strength: "AI response could not be parsed",
-        primarySkillToPractice: "Unable to determine — review session manually",
-        observedDifficulty: "AI analysis unavailable",
-        evidence: `Session stats: ${args.attempts.length} attempts, ${args.retryResults.length} retries`,
-        interventionUsed: `${args.retryResults.length} Rewind(s) applied`,
-        learnerResponse: "Could not parse AI analysis",
-        recommendedNextActivity: "Review the session manually to determine next steps",
-        confidence: "low",
-        reasoning: "OpenRouter response was not valid JSON",
-      };
     }
+
+    return {
+      strength: "AI response could not be parsed",
+      primarySkillToPractice: "Unable to determine — review session manually",
+      observedDifficulty: "AI analysis unavailable",
+      evidence: `Session stats: ${args.attempts.length} attempts, ${args.retryResults.length} retries`,
+      interventionUsed: `${args.retryResults.length} Rewind(s) applied`,
+      learnerResponse: "Could not parse AI analysis",
+      recommendedNextActivity: "Review the session manually to determine next steps",
+      confidence: "low",
+      reasoning: "OpenRouter response was not valid JSON",
+    };
   },
 });
