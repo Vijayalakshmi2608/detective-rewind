@@ -18,6 +18,7 @@ const ReadingScene = lazy(() => import("./pages/ReadingScene.tsx"));
 const ClueBoard = lazy(() => import("./pages/ClueBoard.tsx"));
 const VocabClues = lazy(() => import("./pages/VocabClues.tsx"));
 const Progress = lazy(() => import("./pages/Progress.tsx"));
+const TutorInsights = lazy(() => import("./pages/TutorInsights.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 
 function RouteLoading() {
@@ -112,6 +113,7 @@ function GameRoutes() {
         <Route path="/clues" element={<ClueBoard />} />
         <Route path="/vocabulary" element={<VocabClues />} />
         <Route path="/progress" element={<Progress />} />
+        <Route path="/tutor" element={<TutorInsights />} />
       </Routes>
       <GameNav />
     </GameProvider>

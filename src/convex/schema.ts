@@ -52,6 +52,19 @@ const schema = defineSchema(
       lastSeenAt: v.number(),
     }).index("by_user", ["userId"])
       .index("by_user_word", ["userId", "word"]),
+
+    session_attempts: defineTable({
+      userId: v.id("users"),
+      caseId: v.string(),
+      sceneId: v.string(),
+      questionType: v.string(),
+      selectedOption: v.string(),
+      correct: v.boolean(),
+      wasRewindRetry: v.boolean(),
+      rewindApplied: v.boolean(),
+      timestamp: v.number(),
+    }).index("by_user_case", ["userId", "caseId"])
+      .index("by_user", ["userId"]),
   },
   {
     schemaValidation: false,

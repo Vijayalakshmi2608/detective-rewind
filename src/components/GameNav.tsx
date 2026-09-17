@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router";
-import { Home, FileText, Search, BookOpen, Trophy } from "lucide-react";
+import { Home, FileText, Search, BookOpen, Trophy, Brain } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -8,6 +8,7 @@ const navItems = [
   { path: "/reading", label: "Read", icon: BookOpen },
   { path: "/clues", label: "Clues", icon: Search },
   { path: "/progress", label: "Rank", icon: Trophy },
+  { path: "/tutor", label: "Tutor", icon: Brain },
 ];
 
 export function GameNav() {

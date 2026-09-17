@@ -1,329 +1,312 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router";
-import { useGame } from "@/lib/gameContext";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { useGame } from "../lib/gameContext";
+import { RewindIntervention } from "../components/RewindIntervention";
+import { caseData } from "../lib/gameData";
+import type { SceneType } from "../lib/gameData";
 import {
-  ArrowRight,
   BookOpen,
-  CheckCircle2,
   ChevronRight,
-  Lock,
+  CheckCircle2,
+  XCircle,
+  RotateCcw,
+  Lightbulb,
   MapPin,
-  Sparkles,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-
-const fadeUp = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.5 },
-};
 
 export default function ReadingScene() {
-  const navigate = useNavigate();
-  const { state, answerQuestion, advanceScene } = useGame();
-  const { currentScene, currentSceneIndex, totalScenes, answeredQuestions } =
-    state;
+  const {
+    state,
+    answerQuestion,
+    advanceScene,
+    isCaseComplete,
+    triggerRewind,
+    dismissRewind,
+  } = useGame();
 
+  const currentSceneIndex = state.currentSceneIndex;
+
+  const { currentScene, answeredQuestions, rewind } = state;
+  const isAnswered = answeredQuestions[currentScene.id];
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [isCorrect, setIsCorrect] = useState(false);
+  const [showResult, setShowResult] = useState(false);
+  const [feedbackPhase, setFeedbackPhase] = useState<
+    "answer" | "feedback" | "rewind" | null
+  >(null);
 
-  const alreadyAnswered = answeredQuestions[currentScene.id];
+  const handleAnswer = (option: SceneType["options"][number]) => {
+    if (showResult) return;
+    setSelectedOption(option.id);
+    answerQuestion(currentScene.id, option.id, option.correct);
+    setShowResult(true);
+    setFeedbackPhase("feedback");
 
-  const handleAnswer = (optionId: string, correct: boolean) => {
-    if (alreadyAnswered || selectedOption) return;
-    setSelectedOption(optionId);
-    setIsCorrect(correct);
-    setShowFeedback(true);
-    answerQuestion(currentScene.id, optionId, correct);
-  };
-
-  const handleContinue = () => {
-    if (currentSceneIndex < totalScenes - 1) {
-      advanceScene();
-      navigate("/reading");
-    } else {
-      navigate("/clues");
+    // If wrong, offer rewind after showing feedback
+    if (!option.correct) {
+      // Don't trigger rewind immediately — let user see why they were wrong first
     }
   };
 
-  return (
-    <main className="min-h-screen bg-[#f8f7f4] pb-24">
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={currentScene.id}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          {/* Header */}
-          <header className="px-5 pt-6 pb-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Scene {currentSceneIndex + 1} of {totalScenes}
-                </p>
-                <h1 className="mt-1 text-xl font-bold tracking-tight text-foreground">
-                  {currentScene.title}
-                </h1>
-              </div>
-              <Badge
-                variant="secondary"
-                className="gap-1 text-xs font-semibold"
-              >
-                <MapPin className="h-3 w-3" />
-                {currentScene.location}
-              </Badge>
-            </div>
-          </header>
+  const handleRetry = () => {
+    setFeedbackPhase("rewind");
+    triggerRewind(currentScene.id, selectedOption!);
+  };
 
-          <div className="space-y-4 px-5">
-            {/* Scene Illustration Card */}
-            <motion.div {...fadeUp}>
-              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 text-white shadow-lg">
-                <div className="absolute inset-0 opacity-10">
-                  <div className="absolute left-4 top-4 text-6xl">
-                    {currentScene.locationIcon}
-                  </div>
-                  <div className="absolute bottom-4 right-4 text-4xl rotate-12">
-                    🔎
-                  </div>
-                </div>
-                <div className="relative z-10">
-                  <div className="mb-3 flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10">
-                      <BookOpen className="h-4 w-4" />
-                    </div>
-                    <span className="text-xs font-semibold uppercase tracking-wider text-white/70">
-                      Investigation Report
-                    </span>
-                  </div>
-                  <p className="text-sm leading-relaxed text-white/90">
-                    {currentScene.passage}
+  const handleRewindComplete = (retryCorrect: boolean) => {
+    setFeedbackPhase(null);
+    setShowResult(true);
+  };
+
+  const selected = currentScene.options.find((o) => o.id === selectedOption);
+  const adaptedMsg = state.adaptiveRecommendation?.hintMessage;
+
+  return (
+    <>
+      {rewind?.active && (
+        <RewindIntervention
+          rewind={rewind}
+          onRetryComplete={handleRewindComplete}
+        />
+      )}
+
+      <motion.div
+        key={currentScene.id}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        className="max-w-2xl mx-auto"
+      >
+        {/* Adapted challenge indicator */}
+        {adaptedMsg && !isAnswered && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            className="mb-4 rounded-xl bg-indigo-50 border border-indigo-200 px-4 py-3 flex items-center gap-2"
+          >
+            <Lightbulb className="w-4 h-4 text-indigo-500 shrink-0" />
+            <p className="text-xs text-indigo-700 leading-relaxed">
+              {adaptedMsg}
+            </p>
+          </motion.div>
+        )}
+
+        {/* Scene Header */}
+        <div className="rounded-2xl bg-white shadow-sm border border-slate-200 p-5 mb-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
+              <MapPin className="w-5 h-5 text-indigo-600" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-slate-800 font-display text-lg">
+                {currentScene.title}
+              </h2>
+              <p className="text-xs text-slate-500">
+                {currentScene.location} — Scene {currentSceneIndex + 1} of{" "}
+                {caseData.scenes.length}
+              </p>
+            </div>
+          </div>
+
+          {/* Witness Card */}
+          <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 mb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-sm font-semibold text-indigo-700">
+                {currentScene.witnessName ? currentScene.witnessName[0] : "?"}
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-800">
+                  {currentScene.witnessName}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {currentScene.witnessRole}
+                </p>
+              </div>
+            </div>
+            <p className="text-sm text-slate-700 leading-relaxed italic">
+              "{currentScene.witnessStatement}"
+            </p>
+          </div>
+
+          {/* Passage */}
+          <div className="rounded-xl bg-indigo-50/50 border border-indigo-100 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <BookOpen className="w-4 h-4 text-indigo-600" />
+              <p className="text-xs font-semibold text-indigo-700 uppercase tracking-wider">
+                Case Evidence
+              </p>
+            </div>
+            <p className="text-sm text-slate-800 leading-relaxed whitespace-pre-line">
+              {currentScene.passage}
+            </p>
+          </div>
+        </div>
+
+        {/* Question */}
+        <div className="rounded-2xl bg-white shadow-sm border border-slate-200 p-5 mb-4">
+          <h3 className="text-sm font-semibold text-slate-800 mb-3 flex items-center gap-2">
+            <span className="w-6 h-6 rounded-lg bg-indigo-100 flex items-center justify-center text-xs text-indigo-700">
+              ?
+            </span>
+            {currentScene.question}
+          </h3>
+
+          <div className="space-y-2">
+            {currentScene.options.map((option, i) => {
+              const letters = ["A", "B", "C", "D"];
+              const isCorrect = option.correct;
+              const isSelected = selectedOption === option.id;
+              const showCorrectHighlight =
+                showResult && isCorrect;
+              const showWrongHighlight =
+                showResult && isSelected && !isCorrect;
+
+              return (
+                <motion.button
+                  key={option.id}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  onClick={() => handleAnswer(option)}
+                  disabled={showResult}
+                  className={`w-full p-3.5 text-left rounded-xl border-2 transition-all text-sm flex items-center gap-3 ${
+                    showCorrectHighlight
+                      ? "border-emerald-400 bg-emerald-50"
+                      : showWrongHighlight
+                        ? "border-red-300 bg-red-50"
+                        : isSelected
+                          ? "border-indigo-400 bg-indigo-50"
+                          : "border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50"
+                  }`}
+                >
+                  <span
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-semibold shrink-0 ${
+                      showCorrectHighlight
+                        ? "bg-emerald-100 text-emerald-700"
+                        : showWrongHighlight
+                          ? "bg-red-100 text-red-600"
+                          : "bg-slate-100 text-slate-600"
+                    }`}
+                  >
+                    {showCorrectHighlight ? (
+                      <CheckCircle2 className="w-4 h-4" />
+                    ) : showWrongHighlight ? (
+                      <XCircle className="w-4 h-4" />
+                    ) : (
+                      letters[i]
+                    )}
+                  </span>
+                  <span className="text-slate-700">{option.text}</span>
+                </motion.button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Feedback Panel */}
+        <AnimatePresence>
+          {showResult && selected && (
+            <motion.div
+              initial={{ opacity: 0, y: 10, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: "auto" }}
+              exit={{ opacity: 0, y: -10, height: 0 }}
+              className="mb-4"
+            >
+              <div
+                className={`rounded-2xl p-5 border ${
+                  selected.correct
+                    ? "bg-emerald-50 border-emerald-200"
+                    : "bg-amber-50 border-amber-200"
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  {selected.correct ? (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                  ) : (
+                    <XCircle className="w-5 h-5 text-amber-600" />
+                  )}
+                  <p
+                    className={`font-semibold text-sm ${
+                      selected.correct ? "text-emerald-800" : "text-amber-800"
+                    }`}
+                  >
+                    {selected.correct
+                      ? "Correct! You found a key piece of evidence."
+                      : "Not quite — but a good detective never gives up."}
                   </p>
                 </div>
+                <p
+                  className={`text-sm leading-relaxed ${
+                    selected.correct ? "text-emerald-700" : "text-amber-700"
+                  }`}
+                >
+                  {selected.feedback}
+                </p>
+
+                {/* Rewind option for wrong answers */}
+                {!selected.correct && feedbackPhase === "feedback" && (
+                  <motion.button
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.5 }}
+                    onClick={handleRetry}
+                    className="mt-3 px-4 py-2.5 rounded-xl bg-amber-500 text-white text-sm font-semibold hover:bg-amber-600 transition-colors flex items-center gap-2"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    Rewind & Try Again
+                  </motion.button>
+                )}
+
+                {selected.correct && (
+                  <div className="mt-3 rounded-xl bg-white/60 border border-emerald-200 p-3">
+                    <p className="text-xs font-semibold text-emerald-700 mb-1 flex items-center gap-1.5">
+                      <Lightbulb className="w-3.5 h-3.5" />
+                      Clue Unlocked
+                    </p>
+                    <p className="text-sm text-emerald-800">
+                      {currentScene.clueUnlocked?.description}
+                    </p>
+                  </div>
+                )}
               </div>
             </motion.div>
+          )}
+        </AnimatePresence>
 
-            {/* Witness Card */}
-            {currentScene.witnessName && currentScene.witnessName !== "Detective" && (
-              <motion.div
-                {...fadeUp}
-                transition={{ delay: 0.1 }}
-              >
-                <Card className="border-0 bg-white shadow-sm">
-                  <CardContent className="p-5">
-                    <div className="mb-3 flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-lg font-bold text-primary">
-                        {currentScene.witnessName[0]}
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-foreground">
-                          {currentScene.witnessName}
-                        </p>
-                        <p className="text-xs font-medium text-primary">
-                          {currentScene.witnessRole}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="relative rounded-xl bg-muted/50 p-4">
-                      <div className="absolute -left-1 -top-1 text-2xl text-muted-foreground/30">
-                        "
-                      </div>
-                      <p className="pl-3 text-sm italic leading-relaxed text-muted-foreground">
-                        {currentScene.witnessStatement}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            )}
-
-            {/* Question */}
-            <motion.div {...fadeUp} transition={{ delay: 0.15 }}>
-              <Card className="border-0 bg-white shadow-sm">
-                <CardContent className="p-5">
-                  <div className="mb-4 flex items-start gap-2">
-                    <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-                    <p className="text-sm font-bold leading-snug text-foreground">
-                      {currentScene.question}
-                    </p>
-                  </div>
-
-                  <div className="space-y-2.5">
-                    {currentScene.options.map((option: { id: string; text: string; correct: boolean; feedback: string }) => {
-                      const isSelected = selectedOption === option.id;
-                      const showResult =
-                        alreadyAnswered || (showFeedback && isSelected);
-
-                      return (
-                        <button
-                          key={option.id}
-                          onClick={() =>
-                            handleAnswer(option.id, option.correct)
-                          }
-                          disabled={!!alreadyAnswered || (!!selectedOption && !isSelected)}
-                          className={cn(
-                            "w-full rounded-xl border-2 p-4 text-left text-sm font-medium transition-all duration-200",
-                            !showResult && !alreadyAnswered &&
-                              "border-border/60 bg-white hover:border-primary/40 hover:bg-primary/5 active:scale-[0.98]",
-                            showResult && option.correct &&
-                              "border-emerald-300 bg-emerald-50 text-emerald-800",
-                            showResult && !option.correct && isSelected &&
-                              "border-red-200 bg-red-50 text-red-800",
-                            showResult && !option.correct && !isSelected &&
-                              "border-border/30 bg-muted/30 opacity-50",
-                            alreadyAnswered && !isSelected && "opacity-50",
-                          )}
-                        >
-                          <span className="flex items-center gap-3">
-                            <span
-                              className={cn(
-                                "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold",
-                                showResult && option.correct
-                                  ? "bg-emerald-500 text-white"
-                                  : showResult && isSelected
-                                    ? "bg-red-500 text-white"
-                                    : "bg-muted text-muted-foreground",
-                              )}
-                            >
-                              {showResult && option.correct ? (
-                                <CheckCircle2 className="h-4 w-4" />
-                              ) : showResult && isSelected ? (
-                                "✕"
-                              ) : (
-                                option.id.toUpperCase()
-                              )}
-                            </span>
-                            <span>{option.text}</span>
-                          </span>
-                          {showResult && (
-                            <motion.p
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: "auto" }}
-                              className="mt-2 pl-10 text-xs leading-relaxed text-muted-foreground"
-                            >
-                              {option.feedback}
-                            </motion.p>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Clue Unlocked */}
-            {showFeedback && isCorrect && currentScene.clueUnlocked && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.2 }}
-              >
-                <div className="overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10 p-5">
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl">
-                      {currentScene.clueUnlocked.icon}
-                    </span>
-                    <div>
-                      <p className="text-xs font-bold uppercase tracking-wider text-primary">
-                        Clue Unlocked!
-                      </p>
-                      <p className="text-sm font-bold text-foreground">
-                        {currentScene.clueUnlocked.name}
-                      </p>
-                      <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-                        {currentScene.clueUnlocked.description}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Continue Button */}
-            {(showFeedback || alreadyAnswered) && (
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-              >
-                {currentSceneIndex < totalScenes - 1 ? (
-                  <Button
-                    onClick={handleContinue}
-                    size="lg"
-                    className="w-full h-13 rounded-2xl text-sm font-semibold"
-                  >
-                    Next Scene
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() => navigate("/clues")}
-                    size="lg"
-                    className="w-full h-13 rounded-2xl text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700"
-                  >
-                    Review Clue Board
-                    <ChevronRight className="ml-2 h-4 w-4" />
-                  </Button>
-                )}
-              </motion.div>
-            )}
-
-            {/* Locked Scenes Preview */}
-            {currentSceneIndex < totalScenes - 1 && !showFeedback && !alreadyAnswered && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-                className="space-y-2"
-              >
-                <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                  <Lock className="h-3 w-3" />
-                  <span>Answer to unlock the next scene</span>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Vocabulary */}
-            {currentScene.vocabulary.length > 0 && (
-              <motion.div
-                {...fadeUp}
-                transition={{ delay: 0.25 }}
-              >
-                <Card className="border-0 bg-white shadow-sm">
-                  <CardContent className="p-4">
-                    <p className="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                      📖 New Words
-                    </p>
-                    <div className="space-y-2">
-                      {currentScene.vocabulary.map((v: { word: string; definition: string }) => (
-                        <div
-                          key={v.word}
-                          className="rounded-lg bg-muted/40 px-3 py-2"
-                        >
-                          <p className="text-sm font-semibold text-foreground">
-                            {v.word}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {v.definition}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            )}
-          </div>
-        </motion.div>
-      </AnimatePresence>
-    </main>
+        {/* Continue Button */}
+        {showResult && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            <button
+              onClick={() => {
+                setShowResult(false);
+                setSelectedOption(null);
+                setFeedbackPhase(null);
+                if (isCaseComplete()) {
+                  window.location.href = "/progress";
+                } else {
+                  advanceScene();
+                }
+              }}
+              className="w-full py-3.5 rounded-2xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-indigo-200"
+            >
+              {isCaseComplete() ? (
+                <>
+                  View Investigation Results
+                  <CheckCircle2 className="w-5 h-5" />
+                </>
+              ) : (
+                <>
+                  Continue Investigation
+                  <ChevronRight className="w-5 h-5" />
+                </>
+              )}
+            </button>
+          </motion.div>
+        )}
+      </motion.div>
+    </>
   );
 }
