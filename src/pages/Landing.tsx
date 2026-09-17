@@ -89,14 +89,7 @@ export default function Landing() {
               Start Your First Case
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-            <Button
-              onClick={() => navigate("/home")}
-              variant="ghost"
-              size="lg"
-              className="w-full h-12 rounded-2xl text-sm font-medium text-muted-foreground hover:text-foreground"
-            >
-              Continue as Guest
-            </Button>
+
           </motion.div>
         </motion.div>
       </section>
@@ -121,37 +114,49 @@ export default function Landing() {
               icon: <BookOpen className="h-5 w-5" />,
               title: "Read the Story",
               description:
-                "Every mystery begins with a reading. Passages contain the clues you need — but you have to pay attention.",
+                "Read witness statements carefully. Every passage contains clues you need to solve the case.",
               num: "01",
+              highlight: false,
             },
             {
               icon: <Search className="h-5 w-5" />,
               title: "Investigate & Deduce",
               description:
-                "Analyze witness statements, spot contradictions, and answer questions to unlock clues.",
+                "Analyze evidence, connect details, and answer questions to unlock clues.",
               num: "02",
+              highlight: false,
             },
             {
               icon: <Sparkles className="h-5 w-5" />,
-              title: "AI-Powered Feedback",
+              title: "AI Rewind & Learn",
               description:
-                "Get instant, encouraging feedback on your reasoning. Learn vocabulary naturally as you investigate.",
+                "When you struggle, AI identifies what went wrong, rewinds the story, gives targeted support, and lets you try again.",
               num: "03",
+              highlight: true,
             },
             {
               icon: <Trophy className="h-5 w-5" />,
-              title: "Solve & Rank Up",
+              title: "Solve & Improve",
               description:
-                "Solve the mystery, collect all clues, and earn your detective rank. Each case makes you sharper.",
+                "Solve the mystery, collect every clue, and see how your reading skills improve.",
               num: "04",
+              highlight: false,
             },
           ].map((feature, i) => (
             <motion.div
               key={feature.title}
               variants={fadeUp}
-              className="group flex items-start gap-4 rounded-2xl border border-border/60 bg-card p-5 shadow-card transition-shadow duration-300 hover:shadow-card-hover sm:p-6"
+              className={`group flex items-start gap-4 rounded-2xl border p-5 shadow-card transition-shadow duration-300 hover:shadow-card-hover sm:p-6 ${
+                feature.highlight
+                  ? "border-gold/25 bg-gold/[0.03]"
+                  : "border-border/60 bg-card"
+              }`}
             >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/8 text-primary transition-colors duration-300 group-hover:bg-primary group-hover:text-primary-foreground">
+              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-colors duration-300 ${
+                feature.highlight
+                  ? "bg-gold/10 text-gold group-hover:bg-gold group-hover:text-white"
+                  : "bg-primary/8 text-primary group-hover:bg-primary group-hover:text-primary-foreground"
+              }`}>
                 {feature.icon}
               </div>
               <div className="min-w-0 flex-1">
@@ -265,7 +270,7 @@ export default function Landing() {
             Join thousands of young detectives solving mysteries through reading.
           </p>
           <Button
-            onClick={() => navigate("/auth")}
+            onClick={() => navigate("/home")}
             size="lg"
             className="mt-8 w-full h-14 rounded-2xl text-base font-bold bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:translate-y-[-1px]"
           >
