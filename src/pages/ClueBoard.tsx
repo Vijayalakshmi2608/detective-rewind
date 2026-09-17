@@ -7,9 +7,9 @@ import { ArrowRight, Lock, CheckCircle2 } from "lucide-react";
 import type { CaseType } from "@/lib/gameData";
 
 const fadeUp = {
-  initial: { opacity: 0, y: 16 },
+  initial: { opacity: 0, y: 14 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.45 },
+  transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] as const },
 };
 
 export default function ClueBoard() {
@@ -22,20 +22,20 @@ export default function ClueBoard() {
     .map((s: CaseType["scenes"][number]) => s.clueUnlocked!);
 
   return (
-    <main className="min-h-screen bg-[#f8f7f4] pb-24">
-      <header className="px-5 pt-6 pb-4">
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+    <main className="min-h-screen bg-background pb-28">
+      <header className="px-5 pt-8 pb-5 sm:px-8 sm:pt-10">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gold">
           Investigation
         </p>
-        <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground">
+        <h1 className="mt-1.5 text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
           Clue Board
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-1.5 text-[13px] text-muted-foreground font-medium">
           {cluesFound.length} of {allClues.length} clues discovered
         </p>
       </header>
 
-      <div className="space-y-4 px-5">
+      <div className="space-y-6 px-5 sm:px-8">
         {/* Clue Grid */}
         <motion.div {...fadeUp}>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -44,25 +44,25 @@ export default function ClueBoard() {
               return (
                 <motion.div
                   key={clue.id}
-                  initial={{ opacity: 0, y: 12 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.05 * i }}
+                  transition={{ delay: 0.04 * i }}
                 >
                   <Card
-                    className={`border-0 shadow-sm transition-all duration-300 ${
+                    className={`border-0 shadow-card transition-all duration-300 overflow-hidden ${
                       isFound
-                        ? "bg-white"
-                        : "bg-muted/40 border border-dashed border-border"
+                        ? "bg-card"
+                        : "bg-secondary/40 border border-dashed border-border"
                     }`}
                   >
-                    <CardContent className="p-4">
+                    <CardContent className="p-4 sm:p-5">
                       <div className="flex items-start gap-3">
                         <div
-                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl ${
-                            isFound ? "bg-primary/10" : "bg-muted"
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg ${
+                            isFound ? "bg-gold/10" : "bg-secondary"
                           }`}
                         >
-                          {isFound ? clue.icon : <Lock className="h-4 w-4 text-muted-foreground" />}
+                          {isFound ? clue.icon : <Lock className="h-4 w-4 text-muted-foreground/40" />}
                         </div>
                         <div className="min-w-0 flex-1">
                           {isFound ? (
@@ -73,16 +73,16 @@ export default function ClueBoard() {
                                   {clue.name}
                                 </p>
                               </div>
-                              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                              <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
                                 {clue.description}
                               </p>
                             </>
                           ) : (
                             <>
-                              <p className="text-sm font-bold text-muted-foreground">
+                              <p className="text-sm font-bold text-muted-foreground/60">
                                 Undiscovered Clue
                               </p>
-                              <p className="mt-1 text-xs text-muted-foreground/70">
+                              <p className="mt-1 text-[13px] text-muted-foreground/40">
                                 Keep reading to find this clue
                               </p>
                             </>
@@ -98,20 +98,20 @@ export default function ClueBoard() {
         </motion.div>
 
         {/* Suspects Quick View */}
-        <motion.div {...fadeUp} transition={{ delay: 0.15 }}>
-          <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-foreground">
+        <motion.div {...fadeUp} transition={{ delay: 0.12 }}>
+          <h3 className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
             Suspects
           </h3>
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          <div className="flex gap-2.5 overflow-x-auto pb-1 -mx-5 px-5 sm:mx-0 sm:px-0">
             {currentCase.suspects.map((suspect: CaseType["suspects"][number]) => (
               <div
                 key={suspect.name}
-                className="flex shrink-0 items-center gap-2 rounded-xl border border-border/60 bg-white px-3 py-2"
+                className="flex shrink-0 items-center gap-2.5 rounded-xl border border-border/60 bg-card px-3.5 py-2.5 shadow-card"
               >
                 <span className="text-lg">{suspect.icon}</span>
                 <div>
                   <p className="text-xs font-bold text-foreground">{suspect.name}</p>
-                  <p className="text-[10px] text-muted-foreground">{suspect.role}</p>
+                  <p className="text-[10px] text-muted-foreground font-medium">{suspect.role}</p>
                 </div>
               </div>
             ))}
@@ -119,11 +119,11 @@ export default function ClueBoard() {
         </motion.div>
 
         {/* Actions */}
-        <motion.div {...fadeUp} transition={{ delay: 0.25 }} className="space-y-2">
+        <motion.div {...fadeUp} transition={{ delay: 0.2 }} className="space-y-2.5">
           <Button
             onClick={() => navigate("/reading")}
             size="lg"
-            className="w-full h-13 rounded-2xl text-sm font-semibold"
+            className="w-full h-14 rounded-2xl text-sm font-bold bg-primary text-primary-foreground shadow-md hover:shadow-lg transition-all duration-300 hover:translate-y-[-1px]"
           >
             Continue Reading
             <ArrowRight className="ml-2 h-4 w-4" />
@@ -132,7 +132,7 @@ export default function ClueBoard() {
             onClick={() => navigate("/vocabulary")}
             variant="outline"
             size="lg"
-            className="w-full h-12 rounded-2xl text-sm font-semibold"
+            className="w-full h-12 rounded-2xl text-sm font-semibold border-border/60"
           >
             View Vocabulary Notes
           </Button>

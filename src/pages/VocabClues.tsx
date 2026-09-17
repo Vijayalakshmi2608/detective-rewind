@@ -8,9 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowRight, BookOpen, CheckCircle2, Star } from "lucide-react";
 
 const fadeUp = {
-  initial: { opacity: 0, y: 16 },
+  initial: { opacity: 0, y: 14 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.45 },
+  transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] as const },
 };
 
 export default function VocabClues() {
@@ -21,17 +21,19 @@ export default function VocabClues() {
     const seen = new Set<string>();
     const words: { word: string; definition: string; scene: string }[] = [];
 
-    state.currentCase.scenes.forEach((scene: { vocabulary: { word: string; definition: string }[] }, i: number) => {
-      scene.vocabulary.forEach((v: { word: string; definition: string }) => {
-        if (!seen.has(v.word)) {
-          seen.add(v.word);
-          words.push({
-            ...v,
-            scene: `Scene ${i + 1}`,
-          });
-        }
-      });
-    });
+    state.currentCase.scenes.forEach(
+      (scene: { vocabulary: { word: string; definition: string }[] }, i: number) => {
+        scene.vocabulary.forEach((v: { word: string; definition: string }) => {
+          if (!seen.has(v.word)) {
+            seen.add(v.word);
+            words.push({
+              ...v,
+              scene: `Scene ${i + 1}`,
+            });
+          }
+        });
+      },
+    );
 
     return words;
   }, [state.currentCase]);
@@ -39,42 +41,42 @@ export default function VocabClues() {
   const totalWords = vocabWords.length;
 
   return (
-    <main className="min-h-screen bg-[#f8f7f4] pb-24">
-      <header className="px-5 pt-6 pb-4">
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+    <main className="min-h-screen bg-background pb-28">
+      <header className="px-5 pt-8 pb-5 sm:px-8 sm:pt-10">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gold">
           Case Vocabulary
         </p>
-        <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground">
+        <h1 className="mt-1.5 text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
           Vocabulary Notes
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-1.5 text-[13px] text-muted-foreground font-medium">
           {totalWords} words discovered while investigating
         </p>
       </header>
 
-      <div className="space-y-4 px-5">
+      <div className="space-y-5 px-5 sm:px-8">
         {/* Stats */}
         <motion.div {...fadeUp}>
           <div className="grid grid-cols-2 gap-3">
-            <Card className="border-0 bg-white shadow-sm">
+            <Card className="border-0 bg-card shadow-card">
               <CardContent className="flex items-center gap-3 p-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/8">
                   <BookOpen className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-foreground">{totalWords}</p>
-                  <p className="text-xs text-muted-foreground">Total Words</p>
+                  <p className="text-xl font-extrabold text-foreground tracking-tight">{totalWords}</p>
+                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Total Words</p>
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-0 bg-white shadow-sm">
+            <Card className="border-0 bg-card shadow-card">
               <CardContent className="flex items-center gap-3 p-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10">
-                  <Star className="h-5 w-5 text-emerald-600" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gold/10">
+                  <Star className="h-5 w-5 text-gold" />
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-foreground">{totalWords}</p>
-                  <p className="text-xs text-muted-foreground">Words Learned</p>
+                  <p className="text-xl font-extrabold text-foreground tracking-tight">{totalWords}</p>
+                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Words Learned</p>
                 </div>
               </CardContent>
             </Card>
@@ -82,19 +84,19 @@ export default function VocabClues() {
         </motion.div>
 
         {/* Word List */}
-        <motion.div {...fadeUp} transition={{ delay: 0.1 }}>
-          <div className="space-y-2">
+        <motion.div {...fadeUp} transition={{ delay: 0.08 }}>
+          <div className="space-y-2.5">
             {vocabWords.map((word, i) => (
               <motion.div
                 key={word.word}
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.05 * i }}
+                transition={{ delay: 0.04 * i }}
               >
-                <Card className="border-0 bg-white shadow-sm">
-                  <CardContent className="flex items-start gap-3 p-4">
-                    <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                <Card className="border-0 bg-card shadow-card">
+                  <CardContent className="flex items-start gap-3 p-4 sm:p-5">
+                    <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gold/10">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-gold" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
@@ -103,12 +105,12 @@ export default function VocabClues() {
                         </p>
                         <Badge
                           variant="secondary"
-                          className="text-[10px] px-1.5 py-0"
+                          className="text-[10px] px-2 py-0 font-semibold"
                         >
                           {word.scene}
                         </Badge>
                       </div>
-                      <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                      <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
                         {word.definition}
                       </p>
                     </div>
@@ -120,8 +122,10 @@ export default function VocabClues() {
         </motion.div>
 
         {totalWords === 0 && (
-          <motion.div {...fadeUp} className="py-12 text-center">
-            <p className="text-4xl mb-3">📖</p>
+          <motion.div {...fadeUp} className="py-16 text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary text-3xl mb-4">
+              📖
+            </div>
             <p className="text-sm font-medium text-muted-foreground">
               No vocabulary words yet. Start reading to discover new words!
             </p>
@@ -129,14 +133,14 @@ export default function VocabClues() {
         )}
 
         {/* CTA */}
-        <motion.div {...fadeUp} transition={{ delay: 0.2 }}>
+        <motion.div {...fadeUp} transition={{ delay: 0.15 }}>
           <Button
             onClick={() => navigate("/reading")}
             size="lg"
-            className="w-full h-13 rounded-2xl text-sm font-semibold"
+            className="w-full h-14 rounded-2xl text-sm font-bold bg-primary text-primary-foreground shadow-md hover:shadow-lg transition-all duration-300 hover:translate-y-[-1px]"
           >
             Continue Investigation
-            <ArrowRight className="ml-2 h-4 w-4" />
+            <ArrowRight className="ml-2 h-4 h-4" />
           </Button>
         </motion.div>
       </div>

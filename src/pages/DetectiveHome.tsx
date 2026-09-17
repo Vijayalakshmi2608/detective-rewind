@@ -8,12 +8,12 @@ import {
   Card,
   CardContent,
 } from "@/components/ui/card";
-import { ArrowRight, ChevronRight, LogOut, Shield } from "lucide-react";
+import { ArrowRight, ChevronRight, LogOut, Shield, Zap, Search, BookOpen } from "lucide-react";
 
 const fadeUp = {
-  initial: { opacity: 0, y: 20 },
+  initial: { opacity: 0, y: 16 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.5, ease: [0.25, 0.1, 0.25, 1] as const },
+  transition: { duration: 0.45, ease: [0.25, 0.1, 0.25, 1] as const },
 };
 
 export default function DetectiveHome() {
@@ -28,82 +28,87 @@ export default function DetectiveHome() {
   };
 
   return (
-    <main className="min-h-screen bg-[#f8f7f4] pb-24">
+    <main className="min-h-screen bg-background pb-28">
       {/* Header */}
-      <header className="px-5 pt-6 pb-4">
+      <header className="px-5 pt-8 pb-5 sm:px-8 sm:pt-10">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gold">
               Detective Agency
             </p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground">
+            <h1 className="mt-1.5 text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
               Welcome{user?.name ? `, ${user.name}` : ""}
             </h1>
           </div>
           <button
             onClick={handleSignOut}
-            className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="rounded-xl p-2.5 text-muted-foreground transition-all duration-200 hover:bg-secondary hover:text-foreground"
           >
             <LogOut className="h-4 w-4" />
           </button>
         </div>
       </header>
 
-      <div className="space-y-5 px-5">
-        {/* Rank Card */}
+      <div className="space-y-5 px-5 sm:px-8">
+        {/* Rank & Score Row */}
         <motion.div {...fadeUp}>
-          <Card className="border-0 bg-white shadow-sm">
-            <CardContent className="flex items-center gap-4 p-5">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-2xl">
-                {rank.icon}
-              </div>
-              <div className="flex-1">
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Current Rank
-                </p>
-                <p className="mt-0.5 text-lg font-bold text-foreground">
-                  {rank.name}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold text-primary">{state.score}</p>
-                <p className="text-xs text-muted-foreground">points</p>
+          <Card className="border-0 bg-card shadow-card overflow-hidden">
+            <CardContent className="p-5 sm:p-6">
+              <div className="flex items-center gap-4">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/8 text-2xl">
+                  {rank.icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
+                    Current Rank
+                  </p>
+                  <p className="mt-0.5 text-lg font-bold text-foreground tracking-tight">
+                    {rank.name}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-extrabold text-primary">{state.score}</p>
+                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">points</p>
+                </div>
               </div>
             </CardContent>
           </Card>
         </motion.div>
 
-        {/* Active Case */}
-        <motion.div {...fadeUp} transition={{ delay: 0.1 }}>
-          <Card className="border-0 bg-white shadow-sm">
-            <CardContent className="p-5">
-              <div className="mb-3 flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                <p className="text-xs font-semibold uppercase tracking-widest text-emerald-600">
+        {/* Active Case — Featured Card */}
+        <motion.div {...fadeUp} transition={{ delay: 0.08 }}>
+          <Card className="border-0 bg-card shadow-card overflow-hidden">
+            <CardContent className="p-5 sm:p-6">
+              <div className="mb-4 flex items-center gap-2">
+                <div className="relative">
+                  <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                  <div className="absolute inset-0 h-2 w-2 rounded-full bg-emerald-500 animate-ping opacity-40" />
+                </div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-600">
                   Active Case
                 </p>
               </div>
-              <div className="flex items-start gap-3">
-                <span className="text-3xl">{state.currentCase.icon}</span>
+              <div className="flex items-start gap-4">
+                <span className="text-4xl">{state.currentCase.icon}</span>
                 <div className="flex-1 min-w-0">
-                  <h2 className="text-lg font-bold text-foreground leading-tight">
+                  <h2 className="text-lg font-bold text-foreground leading-tight tracking-tight">
                     {state.currentCase.title}
                   </h2>
-                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground line-clamp-2">
+                  <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground line-clamp-2">
                     {state.currentCase.subtitle}
                   </p>
                 </div>
               </div>
 
               {/* Progress */}
-              <div className="mt-4">
+              <div className="mt-5">
                 <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
                   <span>Scene {state.currentSceneIndex + 1} of {state.totalScenes}</span>
-                  <span>{state.progress}%</span>
+                  <span className="font-bold text-foreground">{state.progress}%</span>
                 </div>
-                <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
+                <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-secondary">
                   <motion.div
-                    className="h-full rounded-full bg-primary"
+                    className="h-full rounded-full bg-gradient-to-r from-primary to-primary/80"
                     initial={{ width: 0 }}
                     animate={{ width: `${state.progress}%` }}
                     transition={{ duration: 0.8, ease: "easeOut" }}
@@ -112,20 +117,23 @@ export default function DetectiveHome() {
               </div>
 
               {/* Clues found */}
-              <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-                <Shield className="h-3.5 w-3.5" />
-                <span>{state.cluesFound.length} of {state.currentCase.totalClues} clues discovered</span>
+              <div className="mt-3.5 flex items-center gap-2 text-xs text-muted-foreground">
+                <Shield className="h-3.5 w-3.5 text-gold" />
+                <span className="font-medium">
+                  <span className="font-bold text-foreground">{state.cluesFound.length}</span>
+                  {" "}of {state.currentCase.totalClues} clues discovered
+                </span>
               </div>
             </CardContent>
           </Card>
         </motion.div>
 
-        {/* Continue Investigation */}
-        <motion.div {...fadeUp} transition={{ delay: 0.2 }}>
+        {/* Continue Investigation CTA */}
+        <motion.div {...fadeUp} transition={{ delay: 0.16 }}>
           <Button
             onClick={() => navigate("/reading")}
             size="lg"
-            className="w-full h-14 rounded-2xl text-base font-semibold bg-primary text-primary-foreground shadow-md hover:shadow-lg transition-all duration-200"
+            className="w-full h-14 rounded-2xl text-base font-bold bg-primary text-primary-foreground shadow-md hover:shadow-lg transition-all duration-300 hover:translate-y-[-1px]"
           >
             Continue Investigation
             <ArrowRight className="ml-2 h-5 w-5" />
@@ -133,39 +141,41 @@ export default function DetectiveHome() {
         </motion.div>
 
         {/* Quick Links */}
-        <motion.div {...fadeUp} transition={{ delay: 0.3 }}>
-          <div className="space-y-2">
+        <motion.div {...fadeUp} transition={{ delay: 0.24 }}>
+          <div className="space-y-2.5">
             {[
               {
                 label: "View Clue Board",
                 desc: `${state.cluesFound.length} clues collected`,
                 path: "/clues",
-                emoji: "🔍",
+                icon: <Search className="h-4 w-4" />,
               },
               {
                 label: "Vocabulary Notes",
                 desc: "Words you've discovered",
                 path: "/vocabulary",
-                emoji: "📖",
+                icon: <BookOpen className="h-4 w-4" />,
               },
               {
                 label: "Case Progress",
                 desc: `${state.currentCase.suspectCount} suspects to investigate`,
                 path: "/progress",
-                emoji: "📊",
+                icon: <Zap className="h-4 w-4" />,
               },
             ].map((link) => (
               <button
                 key={link.path}
                 onClick={() => navigate(link.path)}
-                className="flex w-full items-center gap-3 rounded-2xl border border-border/60 bg-white px-4 py-3 text-left transition-all duration-200 hover:shadow-sm"
+                className="group flex w-full items-center gap-3.5 rounded-2xl border border-border/60 bg-card px-4 py-3.5 text-left transition-all duration-200 hover:shadow-card-hover hover:border-primary/10"
               >
-                <span className="text-xl">{link.emoji}</span>
-                <div className="flex-1">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground transition-colors group-hover:bg-primary/8 group-hover:text-primary">
+                  {link.icon}
+                </div>
+                <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-foreground">{link.label}</p>
                   <p className="text-xs text-muted-foreground">{link.desc}</p>
                 </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                <ChevronRight className="h-4 w-4 text-muted-foreground/40 transition-transform group-hover:translate-x-0.5 group-hover:text-foreground/40" />
               </button>
             ))}
           </div>
