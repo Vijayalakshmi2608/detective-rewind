@@ -1,16 +1,241 @@
 import { v } from "convex/values";
 import { action } from "./_generated/server";
 
-type AttemptData = {
-  sceneId: string;
-  questionType: string;
-  correct: boolean;
-  wasRewindRetry: boolean;
-  rewindApplied: boolean;
+// ─── AI Reading Feedback — real reasoning evaluation via Nemotron ────
+
+type ReasoningEvalInput = {
+  question: string;
+  chosenAnswer: string;
+  correctAnswer: string;
+  wasCorrect: boolean;
+  witnessStatement: string;
+  readingMetrics?: {
+    wcpm?: number;
+    accuracyPct?: number;
+    selfCorrections?: number;
+    durationSec?: number;
+  } | null;
+  caseTitle: string;
+  sceneLocation: string;
 };
 
+type ReasoningEval = {
+  understanding: string; // what the learner's answer shows they understood
+  reasoningQuality: string; // quality of the reasoning path
+  nextStep: string; // concrete next step
+  connectsToReading: string; // how reading/fluency relates to comprehension
+  confidence: "high" | "medium" | "low";
+};
+
+const SYSTEM_PROMPT = `You are a warm, expert reading tutor inside "Detective Rewind", a reading-mystery game for children ages 7-10. You receive a child's REAL session data (their answer, whether it was correct, optionally oral-reading fluency metrics from speech recognition).
+
+Analyze ONLY what the data shows. Never invent abilities or scores. If data is thin, lower your confidence and say what's uncertain. Encourage a young reader honestly.
+
+Return ONLY valid JSON with keys: understanding, reasoningQuality, nextStep, connectsToReading, confidence ("high"|"medium"|"low"). Keep each string under 30 words, warm and specific to the data.`;
+
+async function callNemotron(
+  prompt: string,
+  apiKey: string,
+): Promise<string> {
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": "https://detective-rewind.app",
+      "X-Title": "Detective Rewind Tutor",
+    },
+    body: JSON.stringify({
+      model: "nvidia/nemotron-3-super-120b-a12b:free",
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: prompt },
+      ],
+      temperature: 0.3,
+      // Nemotron reasoning models spend tokens thinking before answering;
+      // too small a budget yields an empty completion
+      max_tokens: 2000,
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`OpenRouter API error ${res.status}: ${text}`);
+  }
+
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content ?? "";
+}
+
+function buildPrompt(input: ReasoningEvalInput): string {
+  const { readingMetrics } = input;
+  const readingLine = readingMetrics
+    ? `\nOral reading (from speech recognition): ${readingMetrics.wcpm ?? "?"} words-correct per minute, ${readingMetrics.accuracyPct ?? "?"}% word accuracy, ${readingMetrics.selfCorrections ?? 0} self-corrections, read for ${readingMetrics.durationSec ?? "?"} seconds.`
+    : "\nOral reading: not captured for this scene.";
+
+  return `Analyze this learner's detective investigation step.
+
+Case: "${input.caseTitle}" — Scene: ${input.sceneLocation}
+
+Witness statement (what they read aloud):
+"${input.witnessStatement}"
+
+Question asked: "${input.question}"
+Their answer: "${input.chosenAnswer}"
+Correct answer: "${input.correctAnswer}"
+Was correct: ${input.wasCorrect}${readingLine}
+
+Evaluate their REASONING based on what their answer reveals. If they were wrong, identify the likely misunderstanding WITHOUT giving away the answer. If reading metrics exist, connect fluency to comprehension where the data supports it.
+
+Return JSON: { "understanding": string, "reasoningQuality": string, "nextStep": string, "connectsToReading": string, "confidence": "high"|"medium"|"low" }`;
+}
+
+// Robust JSON extraction for reasoning models (<think> blocks, prose,
+// doubled braces — all observed with Nemotron)
+function parseModelJson<T>(text: string): T | null {
+  const cleaned = text
+    .replace(/<think>[\s\S]*?<\/think>/gi, "")
+    .replace(/```json\s*/gi, "")
+    .replace(/```\s*/gi, "")
+    .trim();
+
+  const matchBraces = (start: number): string | null => {
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+    for (let i = start; i < cleaned.length; i++) {
+      const ch = cleaned[i];
+      if (escaped) {
+        escaped = false;
+      } else if (ch === "\\") {
+        escaped = true;
+      } else if (ch === '"') {
+        inString = !inString;
+      } else if (!inString) {
+        if (ch === "{") depth++;
+        else if (ch === "}") {
+          depth--;
+          if (depth === 0) return cleaned.slice(start, i + 1);
+        }
+      }
+    }
+    return null;
+  };
+
+  for (let i = 0; i < cleaned.length; i++) {
+    if (cleaned[i] === "{") {
+      const candidate = matchBraces(i);
+      if (candidate) {
+        try {
+          return JSON.parse(candidate) as T;
+        } catch {
+          // scan next '{'
+        }
+      }
+    }
+  }
+  return null;
+}
+
+export const evaluateReasoning = action({
+  args: {
+    question: v.string(),
+    chosenAnswer: v.string(),
+    correctAnswer: v.string(),
+    wasCorrect: v.boolean(),
+    witnessStatement: v.string(),
+    readingMetrics: v.optional(
+      v.object({
+        wcpm: v.optional(v.number()),
+        accuracyPct: v.optional(v.number()),
+        selfCorrections: v.optional(v.number()),
+        durationSec: v.optional(v.number()),
+      }),
+    ),
+    caseTitle: v.string(),
+    sceneLocation: v.string(),
+  },
+  handler: async (_ctx, args): Promise<ReasoningEval> => {
+    const apiKey = process.env.OPENROUTER_API_KEY?.trim().replace(
+      /^["']|["']$/g,
+      "",
+    );
+
+    if (!apiKey) {
+      // Honest fallback — clearly labeled as non-AI, stats-based
+      return {
+        understanding: args.wasCorrect
+          ? "Your answer shows you understood what the statement told the investigation."
+          : "Your answer suggests the key detail in the statement was missed this time.",
+        reasoningQuality: args.wasCorrect
+          ? "You connected the statement to the question well."
+          : "Re-reading the statement slowly will help the details stick.",
+        nextStep: args.wasCorrect
+          ? "Keep reading carefully — the next scene adds more clues."
+          : "Try the Rewind to re-read the important part with a hint.",
+        connectsToReading: readingMetricsFallbackLine(args.readingMetrics),
+        confidence: "low",
+      };
+    }
+
+    try {
+      const raw = await callNemotron(buildPrompt(args), apiKey);
+      console.log(
+        "[evaluateReasoning] raw output (first 400):",
+        raw.slice(0, 400),
+      );
+      const parsed = parseModelJson<ReasoningEval>(raw);
+
+      if (parsed) {
+        return {
+          understanding:
+            parsed.understanding || "Unable to assess understanding.",
+          reasoningQuality:
+            parsed.reasoningQuality || "Unable to assess reasoning.",
+          nextStep: parsed.nextStep || "Continue to the next scene.",
+          connectsToReading:
+            parsed.connectsToReading || "Keep reading aloud to build fluency.",
+          confidence: parsed.confidence || "low",
+        };
+      }
+
+      // Model returned unparseable output — say so honestly
+      return {
+        understanding:
+          args.wasCorrect
+            ? "Your answer shows you understood the statement."
+            : "The key detail was missed this time — re-reading will help.",
+        reasoningQuality: "AI analysis was unavailable for this answer.",
+        nextStep: args.wasCorrect
+          ? "Continue investigating the next scene."
+          : "Use Rewind to try again with support.",
+        connectsToReading: readingMetricsFallbackLine(args.readingMetrics),
+        confidence: "low",
+      };
+    } catch {
+      return {
+        understanding: "AI feedback is temporarily unavailable.",
+        reasoningQuality: "Your answer was recorded and scored normally.",
+        nextStep: args.wasCorrect
+          ? "Continue to the next scene."
+          : "Use Rewind to try again with support.",
+        connectsToReading: readingMetricsFallbackLine(args.readingMetrics),
+        confidence: "low",
+      };
+    }
+  },
+});
+
+// ─── Tutor Action Card — session-level AI analysis ────
+
 type TutorCardInput = {
-  attempts: AttemptData[];
+  attempts: {
+    sceneId: string;
+    questionType: string;
+    correct: boolean;
+    wasRewindRetry: boolean;
+    rewindApplied: boolean;
+  }[];
   retryResults: {
     originalCorrect: boolean;
     retryCorrect: boolean;
@@ -33,53 +258,16 @@ type TutorCard = {
   reasoning: string;
 };
 
-async function callNemotron(prompt: string, apiKey: string): Promise<string> {
-  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": "https://detective-rewind.app",
-      "X-Title": "Detective Rewind Tutor",
-    },
-    body: JSON.stringify({
-      model: "nvidia/nemotron-3-super-120b-a12b:free",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are an expert reading tutor analyzing a child's session data from Detective Rewind, a reading mystery game. Based ONLY on the provided data, generate a concise tutor action card. Be honest about uncertainty — do not invent data. If evidence is insufficient, say so. Return only valid JSON.",
-        },
-        { role: "user", content: prompt },
-      ],
-      temperature: 0.3,
-      max_tokens: 800,
-      response_format: { type: "json_object" },
-    }),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`OpenRouter API error ${res.status}: ${text}`);
-  }
-
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content ?? "";
-}
-
-function buildPrompt(input: TutorCardInput): string {
+function buildTutorPrompt(input: TutorCardInput): string {
   const { attempts, retryResults, caseName, totalScenes, cluesFound } = input;
 
-  // Compute real statistics
   const totalAttempts = attempts.length;
   const correctCount = attempts.filter((a) => a.correct).length;
   const rewindCount = attempts.filter((a) => a.rewindApplied).length;
   const retryAttempts = attempts.filter((a) => a.wasRewindRetry);
   const retryCorrect = retryAttempts.filter((a) => a.correct).length;
-
   const improvements = retryResults.filter((r) => r.improvement).length;
 
-  // Skill breakdown
   const skillBreakdown = Object.entries(
     attempts.reduce(
       (acc, a) => {
@@ -155,31 +343,34 @@ export const generateTutorCard = action({
     cluesFound: v.number(),
   },
   handler: async (_ctx, args): Promise<TutorCard> => {
-    // Trim whitespace/quotes that can sneak in when pasting keys
-    const apiKey = process.env.OPENROUTER_API_KEY?.trim().replace(/^["']|["']$/g, "");
+    const apiKey = process.env.OPENROUTER_API_KEY?.trim().replace(
+      /^["']|["']$/g,
+      "",
+    );
 
     if (!apiKey) {
-      // Graceful fallback when no API key is configured
       const totalAttempts = args.attempts.length;
       const correctCount = args.attempts.filter((a) => a.correct).length;
-      const accuracy = totalAttempts > 0
-        ? Math.round((correctCount / totalAttempts) * 100)
-        : 0;
+      const accuracy =
+        totalAttempts > 0
+          ? Math.round((correctCount / totalAttempts) * 100)
+          : 0;
       const improvements = args.retryResults.filter((r) => r.improvement).length;
 
       return {
-        strength: accuracy >= 60
-          ? "Demonstrated solid comprehension when given sufficient reading time"
-          : "Showed persistence through multiple attempts at understanding the material",
-        primarySkillToPractice:
-          "Inference-based reasoning from textual evidence",
+        strength:
+          accuracy >= 60
+            ? "Demonstrated solid comprehension when given sufficient reading time"
+            : "Showed persistence through multiple attempts at understanding the material",
+        primarySkillToPractice: "Inference-based reasoning from textual evidence",
         observedDifficulty:
           "Distinguishing between directly stated information and inferred conclusions",
         evidence: `${correctCount}/${totalAttempts} first-try correct (${accuracy}%). ${improvements} improvement${improvements !== 1 ? "s" : ""} after Rewind intervention.`,
         interventionUsed: `${args.retryResults.length} Rewind intervention(s) applied with targeted hints`,
-        learnerResponse: improvements > 0
-          ? `Improved on ${improvements}/${args.retryResults.length} retry attempt(s), showing the ability to benefit from guided re-reading`
-          : `Retry attempts did not show improvement — may need different scaffolding strategy`,
+        learnerResponse:
+          improvements > 0
+            ? `Improved on ${improvements}/${args.retryResults.length} retry attempt(s), showing the ability to benefit from guided re-reading`
+            : `Retry attempts did not show improvement — may need different scaffolding strategy`,
         recommendedNextActivity:
           "A carefully controlled inference task with visual text highlighting and a simpler evidence set to build confidence",
         confidence: totalAttempts >= 4 ? "medium" : "low",
@@ -187,72 +378,21 @@ export const generateTutorCard = action({
       };
     }
 
-    const prompt = buildPrompt(args);
-    const raw = await callNemotron(prompt, apiKey);
-    console.log("[tutorInsights] raw model output (first 500 chars):", raw.slice(0, 500));
-
-    // Reasoning models (Nemotron etc.) may wrap output in <think>...</think>,
-    // add prose, or emit doubled braces like {\n{...}. Strategy: clean the
-    // text, then try parsing a brace-matched object starting at EVERY '{'
-    // until one yields valid JSON.
-    const parseModelJson = (text: string): TutorCard | null => {
-      const cleaned = text
-        .replace(/<think>[\s\S]*?<\/think>/gi, "")
-        .replace(/```json\s*/gi, "")
-        .replace(/```\s*/gi, "")
-        .trim();
-
-      // Find matching close brace for an object starting at `start`
-      const matchBraces = (start: number): string | null => {
-        let depth = 0;
-        let inString = false;
-        let escaped = false;
-        for (let i = start; i < cleaned.length; i++) {
-          const ch = cleaned[i];
-          if (escaped) {
-            escaped = false;
-          } else if (ch === "\\") {
-            escaped = true;
-          } else if (ch === '"') {
-            inString = !inString;
-          } else if (!inString) {
-            if (ch === "{") depth++;
-            else if (ch === "}") {
-              depth--;
-              if (depth === 0) return cleaned.slice(start, i + 1);
-            }
-          }
-        }
-        return null;
-      };
-
-      for (let i = 0; i < cleaned.length; i++) {
-        if (cleaned[i] === "{") {
-          const candidate = matchBraces(i);
-          if (candidate) {
-            try {
-              return JSON.parse(candidate) as TutorCard;
-            } catch {
-              // keep scanning from the next '{'
-            }
-          }
-        }
-      }
-      return null;
-    };
-
-    const parsed = parseModelJson(raw);
+    const raw = await callNemotron(buildTutorPrompt(args), apiKey);
+    const parsed = parseModelJson<TutorCard>(raw);
 
     if (parsed) {
-      // Validate required fields
       return {
         strength: parsed.strength || "Insufficient data to determine",
-        primarySkillToPractice: parsed.primarySkillToPractice || "Insufficient data",
+        primarySkillToPractice:
+          parsed.primarySkillToPractice || "Insufficient data",
         observedDifficulty: parsed.observedDifficulty || "Insufficient data",
         evidence: parsed.evidence || "No evidence available",
         interventionUsed: parsed.interventionUsed || "No interventions applied",
         learnerResponse: parsed.learnerResponse || "No retry data available",
-        recommendedNextActivity: parsed.recommendedNextActivity || "Continue with standard reading practice",
+        recommendedNextActivity:
+          parsed.recommendedNextActivity ||
+          "Continue with standard reading practice",
         confidence: parsed.confidence || "low",
         reasoning: parsed.reasoning || "AI-generated assessment",
       };
@@ -265,9 +405,23 @@ export const generateTutorCard = action({
       evidence: `Session stats: ${args.attempts.length} attempts, ${args.retryResults.length} retries`,
       interventionUsed: `${args.retryResults.length} Rewind(s) applied`,
       learnerResponse: "Could not parse AI analysis",
-      recommendedNextActivity: "Review the session manually to determine next steps",
+      recommendedNextActivity:
+        "Review the session manually to determine next steps",
       confidence: "low",
       reasoning: "OpenRouter response was not valid JSON",
     };
   },
 });
+
+function readingMetricsFallbackLine(
+  m?: ReasoningEvalInput["readingMetrics"],
+): string {
+  if (!m || m.wcpm == null) return "Read the next statement aloud to build fluency.";
+  const pace =
+    m.wcpm >= 100 ? "great" : m.wcpm >= 60 ? "good" : "steadily building";
+  const selfCorr =
+    m.selfCorrections && m.selfCorrections > 0
+      ? " — noticing and fixing words is a real reading skill"
+      : "";
+  return `You read at ${m.wcpm} words per minute (${pace} pace${selfCorr}).`;
+}
