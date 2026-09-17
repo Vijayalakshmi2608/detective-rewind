@@ -1,272 +1,343 @@
-## Overview
+<div align="center">
 
-This project uses the following tech stack:
-- Vite
-- Typescript
-- React Router v7 (all imports from `react-router` instead of `react-router-dom`)
-- React 19 (for frontend components)
-- Tailwind v4 (for styling)
-- Shadcn UI (for UI components library)
-- Lucide Icons (for icons)
-- Convex (for backend & database)
-- Convex Auth (for authentication)
-- Framer Motion (for animations)
-- Three js (for 3d models)
+# 🕵️ Detective Rewind
 
-All relevant files live in the 'src' directory.
+### The mystery only continues if you truly understand what you just read.
 
-Use bun for the package manager.
+**An AI reading tutor disguised as a detective game — where wrong answers don't end the story, they rewind it.**
 
-## Setup
-
-This project is set up already and running on a cloud environment, as well as a convex development in the sandbox.
-
-## Environment Variables
-
-The project is set up with project specific CONVEX_DEPLOYMENT and VITE_CONVEX_URL environment variables on the client side.
-
-The convex server has a separate set of environment variables that are accessible by the convex backend.
-
-Currently, these variables include auth-specific keys: JWKS, JWT_PRIVATE_KEY, and SITE_URL.
+[![Made with React](https://img.shields.io/badge/Frontend-React%20%2B%20Vite-61DAFB?logo=react&logoColor=white)](#-tech-stack)
+[![AI](https://img.shields.io/badge/AI-NVIDIA%20Nemotron%20via%20OpenRouter-76B900?logo=nvidia&logoColor=white)](#-the-ai-engine)
+[![Status](https://img.shields.io/badge/Status-Hackathon%20Prototype-orange)](#-project-status)
+[![License](https://img.shields.io/badge/License-MIT-blue)](#-license)
 
 
-# Using Authentication (Important!)
+</div>
 
-You must follow these conventions when using authentication.
+---
 
-## Auth is already set up.
+## 📖 Table of Contents
 
-All convex authentication functions are already set up. The auth currently uses email OTP and anonymous users, but can support more.
+- [The Problem](#-the-problem)
+- [Our Solution](#-our-solution)
+- [How It Works](#-how-it-works)
+- [What Makes It Different](#-what-makes-it-different)
+- [The AI Engine](#-the-ai-engine)
+- [Game Progression](#-game-progression)
+- [Tech Stack](#-tech-stack)
+- [Architecture](#-architecture)
+- [Getting Started](#-getting-started)
+- [Roadmap](#-roadmap)
+- [Project Status](#-project-status)
+- [Target Learners](#-target-learners)
+- [License](#-license)
 
-The email OTP configuration is defined in `src/convex/auth/emailOtp.ts`. DO NOT MODIFY THIS FILE.
+---
 
-Also, DO NOT MODIFY THESE AUTH FILES: `src/convex/auth.config.ts` and `src/convex/auth.ts`.
+## 🎯 The Problem
 
-## Using Convex Auth on the backend
+Most reading apps can tell you *that* an answer is wrong. Very few can tell you **why**.
 
-On the `src/convex/users.ts` file, you can use the `getCurrentUser` function to get the current user's data.
+A learner might miss a question because they:
 
-## Using Convex Auth on the frontend
+| Struggle | What it actually looks like |
+|---|---|
+| 🔍 Missed evidence | Skimmed past the key sentence |
+| 🧩 Misunderstood a line | Read it, but not correctly |
+| 📚 Hit a vocabulary wall | Didn't know a critical word |
+| 🔗 Failed to connect clues | Understood parts, not the whole |
+| 💭 Struggled to infer | Couldn't read between the lines |
+| 🎭 Misjudged motivation | Missed *why* a character acted |
 
-The `/auth` page is already set up to use auth. Navigate to `/auth` for all log in / sign up sequences.
+A flashing **"Try Again"** doesn't fix any of these. It just repeats the failure.
 
-You MUST use this hook to get user data. Never do this yourself without the hook:
-```typescript
-import { useAuth } from "@/hooks/use-auth";
+> **Detective Rewind asks a better question: what went wrong, what does this learner need, and what happens next?**
 
-const { isLoading, isAuthenticated, user, signIn, signOut } = useAuth();
+---
+
+## 💡 Our Solution
+
+Detective Rewind turns comprehension practice into a detective investigation, where reading carefully *is* the gameplay:
+
+| | |
+|---|---|
+| 📖 Interactive mystery storytelling | 🧠 AI-powered comprehension analysis |
+| 🎙️ Oral reading practice | 🔄 Adaptive "Rewind" interventions |
+| 🔎 Evidence-based reasoning | 📚 Vocabulary learned in context |
+| 📈 Ongoing learner modeling | 🎮 Progressive, unlockable case levels |
+| 👩‍🏫 Tutor-facing learning insights | 🧩 Learning-error pattern tracking |
+
+The product feels like a game. Under the hood, it behaves like an adaptive reading tutor.
+
+---
+
+## 🔄 How It Works
+
+```text
+READ → LISTEN & ANALYZE → UNDERSTAND → ANSWER
+                                          │
+                          ┌───────────────┴───────────────┐
+                          │                                │
+                      ✅ Correct                       ❌ Struggle
+                          │                                │
+                    Unlock Clue                    AI Diagnoses Why
+                          │                                │
+                          │                            🔄 REWIND
+                          │                                │
+                          │                     Targeted Micro-Lesson
+                          │                                │
+                          │                             Retry
+                          │                                │
+                          └──────────────► Measure ◄───────┘
+                                              │
+                                      Adapt Next Challenge
+                                              │
+                                          Solve Case
 ```
 
-## Protected Routes
+### The Rewind Loop, in practice
 
-The starter `/dashboard` route is protected with `RequireAuth`, which sends
-signed-out users to `/auth?returnTo=<current route>`. Extend that page for the
-product's authenticated experience, and reuse `RequireAuth` when adding another
-protected route.
+> **Learner:** *"The witness left because he was angry."*
+> **Story evidence:** the witness actually left because he was **afraid**.
 
-## Auth Page
+Instead of a red ❌:
 
-The auth page is defined in `src/pages/Auth.tsx`. Send sign-in and sign-up actions
-to `/auth`.
+```text
+Response Analyzed → Difficulty Identified: "Missed textual evidence"
+      → Rewind Triggered → Relevant Sentence Highlighted
+      → Guided Explanation → Retry → Evidence Connected ✅
+```
 
-## Authorization
+The mistake becomes the lesson — not a dead end.
 
-You can perform authorization checks on the frontend and backend.
+---
 
-On the frontend, you can use the `useAuth` hook to get the current user's data and authentication state.
+## 🧠 What Makes It Different
 
-You should also be protecting queries, mutations, and actions at the base level, checking for authorization securely.
+<table>
+<tr><td width="40px">🔄</td><td><b>AI Rewind</b><br/>Wrong answers trigger diagnosis → targeted support → guided retry, instead of a simple "wrong" flag.</td></tr>
+<tr><td>🎙️</td><td><b>Reading Fluency Built In</b><br/>Witness statements are read aloud, feeding accuracy and confidence signals into the learner model.</td></tr>
+<tr><td>🔎</td><td><b>Evidence-Based Comprehension</b><br/>Answers are evaluated against actual story evidence, not just matched to a key.</td></tr>
+<tr><td>📚</td><td><b>Vocabulary in Context</b><br/>New words appear naturally inside clues and evidence, then resurface later for reinforcement.</td></tr>
+<tr><td>🧩</td><td><b>Learning-Error Fingerprint</b><br/>Tracks recurring patterns (missed evidence, weak inference, vocabulary gaps) across sessions, not just single mistakes.</td></tr>
+<tr><td>📈</td><td><b>Adaptive Learner Model</b><br/>Fluency, comprehension, inference, vocabulary, and persistence are tracked to shape future challenge difficulty.</td></tr>
+</table>
 
-## Adding a redirect after auth
+---
 
-The `/auth` route in `src/main.tsx` redirects to `/dashboard` by default. If the
-product's main authenticated route is different, update `redirectAfterAuth` to
-that route. A validated same-origin `returnTo` query parameter takes priority so
-users can resume the protected page they originally requested. Never leave an
-authenticated product redirecting back to the public landing page.
+## 🤖 The AI Engine
 
-## Complete authenticated products
-
-When the requested product implies accounts, a workspace, a dashboard, or other
-signed-in functionality, the task is not complete with only a landing page and
-auth form. Build the main authenticated experience, protect its route, and verify
-that signing in reaches it.
-
-# Frontend Conventions
-
-You will be using the Vite frontend with React 19, Tailwind v4, and Shadcn UI.
-
-Generally, pages should be in the `src/pages` folder, and components should be in the `src/components` folder.
-
-Shadcn primitives are located in the `src/components/ui` folder and should be used by default.
-
-## Page routing
-
-Your page component should go under the `src/pages` folder.
-
-When adding a page, update the react router configuration in `src/main.tsx` to include the new route you just added.
-
-## Shad CN conventions
-
-Follow these conventions when using Shad CN components, which you should use by default.
-- Remember to use "cursor-pointer" to make the element clickable
-- For title text, use the "tracking-tight font-bold" class to make the text more readable
-- Always make apps MOBILE RESPONSIVE. This is important
-- AVOID NESTED CARDS. Try and not to nest cards, borders, components, etc. Nested cards add clutter and make the app look messy.
-- AVOID SHADOWS. Avoid adding any shadows to components. stick with a thin border without the shadow.
-- Avoid skeletons; instead, use the loader2 component to show a spinning loading state when loading data.
-
-
-## Landing Pages
-
-You must always create good-looking designer-level styles to your application. 
-- Make it well animated and fit a certain "theme", ie neo brutalist, retro, neumorphism, glass morphism, etc
-
-Use known images and emojis from online.
-
-If the user is logged in already, show the get started button to say "Dashboard" or "Profile" instead to take them there.
-
-## Responsiveness and formatting
-
-Make sure pages are wrapped in a container to prevent the width stretching out on wide screens. Always make sure they are centered aligned and not off-center.
-
-Always make sure that your designs are mobile responsive. Verify the formatting to ensure it has correct max and min widths as well as mobile responsiveness.
-
-- Always create sidebars for protected dashboard pages and navigate between pages
-- Always create navbars for landing pages
-- On these bars, the created logo should be clickable and redirect to the index page
-
-## Animating with Framer Motion
-
-You must add animations to components using Framer Motion. It is already installed and configured in the project.
-
-To use it, import the `motion` component from `framer-motion` and use it to wrap the component you want to animate.
-
-
-### Other Items to animate
-- Fade in and Fade Out
-- Slide in and Slide Out animations
-- Rendering animations
-- Button clicks and UI elements
-
-Animate for all components, including on landing page and app pages.
-
-## Three JS Graphics
-
-Your app comes with three js by default. You can use it to create 3D graphics for landing pages, games, etc.
-
-
-## Colors
-
-You can override colors in: `src/index.css`
-
-This uses the oklch color format for tailwind v4.
-
-Always use these color variable names.
-
-Make sure all ui components are set up to be mobile responsive and compatible with both light and dark mode.
-
-Set theme using `dark` or `light` variables at the parent className.
-
-## Styling and Theming
-
-When changing the theme, always change the underlying theme of the shad cn components app-wide under `src/components/ui` and the colors in the index.css file.
-
-Avoid hardcoding in colors unless necessary for a use case, and properly implement themes through the underlying shad cn ui components.
-
-When styling, ensure buttons and clickable items have pointer-click on them (don't by default).
-
-Always follow a set theme style and ensure it is tuned to the user's liking.
-
-## Toasts
-
-You should always use toasts to display results to the user, such as confirmations, results, errors, etc.
-
-Use the shad cn Sonner component as the toaster. For example:
+Detective Rewind runs its reasoning layer on **NVIDIA Nemotron via OpenRouter**. The model isn't just generating story text — it's making pedagogical decisions:
 
 ```
-import { toast } from "sonner"
+comprehension evaluation · inference analysis · evidence linking
+vocabulary assessment · learning-error classification
+intervention selection · rewind explanation · adaptive difficulty
+tutor-facing insight generation
+```
 
-import { Button } from "@/components/ui/button"
-export function SonnerDemo() {
-  return (
-    <Button
-      variant="outline"
-      onClick={() =>
-        toast("Event has been created", {
-          description: "Sunday, December 03, 2023 at 9:00 AM",
-          action: {
-            label: "Undo",
-            onClick: () => console.log("Undo"),
-          },
-        })
-      }
-    >
-      Show Toast
-    </Button>
-  )
+### Structured, validated AI output
+
+```text
+Learner Interaction → OpenRouter → NVIDIA Nemotron → JSON Response
+        → Parse → Validate → Update Learner State → UI / Rewind / Insights
+```
+
+```json
+{
+  "strength": "Vocabulary in context",
+  "primary_skill": "Evidence-based inference",
+  "observed_difficulty": "Missed textual evidence",
+  "evidence": "The learner selected an answer without connecting it to the witness statement.",
+  "intervention": "Guided rereading with evidence highlighting",
+  "learner_response": "Correct reasoning after intervention",
+  "recommended_activity": "Practice another evidence-based inference",
+  "ai_confidence": 0.91
 }
 ```
 
-Remember to import { toast } from "sonner". Usage: `toast("Event has been created.")`
+If a response fails to parse, the app falls back to controlled default behavior — learners never see a raw error.
 
-## Dialogs
+### Child-safe by design
 
-Always ensure your larger dialogs have a scroll in its content to ensure that its content fits the screen size. Make sure that the content is not cut off from the screen.
+- Controlled story structures with fixed learning objectives
+- Reading-level and vocabulary boundaries enforced by prompt design
+- Structured, closed-ended interaction — not an open-ended chatbot
+- AI supports the lesson; it never free-talks with the child
 
-Ideally, instead of using a new page, use a Dialog instead. 
+---
 
-# Using the Convex backend
+## 🎮 Game Progression
 
-You will be implementing the convex backend. Follow your knowledge of convex and the documentation to implement the backend.
+Cases unlock sequentially, keeping the focus on mastery rather than competition:
 
-## The Convex Schema
-
-You must correctly follow the convex schema implementation.
-
-The schema is defined in `src/convex/schema.ts`.
-
-Do not include the `_id` and `_creationTime` fields in your queries (it is included by default for each table).
-Do not index `_creationTime` as it is indexed for you. Never have duplicate indexes.
-
-
-## Convex Actions: Using CRUD operations
-
-When running anything that involves external connections, you must use a convex action with "use node" at the top of the file.
-
-You cannot have queries or mutations in the same file as a "use node" action file. Thus, you must use pre-built queries and mutations in other files.
-
-You can also use the pre-installed internal crud functions for the database:
-
-```ts
-// in convex/users.ts
-import { crud } from "convex-helpers/server/crud";
-import schema from "./schema.ts";
-
-export const { create, read, update, destroy } = crud(schema, "users");
-
-// in some file, in an action:
-const user = await ctx.runQuery(internal.users.read, { id: userId });
-
-await ctx.runMutation(internal.users.update, {
-  id: userId,
-  patch: {
-    status: "inactive",
-  },
-});
+```
+Level 01 → The Midnight Library
+Level 02 → The Vanishing Painting
+Level 03 → The Clockwork Secret
+Level 04 → The Silent Witness
+Level 05 → The Final Case
 ```
 
+Rewards are earned through **learning behavior**, not speed:
 
-## Common Convex Mistakes To Avoid
+`🔎 Evidence Found` · `📖 Careful Reader` · `💡 Strong Inference` · `📚 Word Mastery` · `🔄 Rewind Recovery` · `⭐ Case Solved`
 
-When using convex, make sure:
-- Document IDs are referenced as `_id` field, not `id`.
-- Document ID types are referenced as `Id<"TableName">`, not `string`.
-- Document object types are referenced as `Doc<"TableName">`.
-- Keep schemaValidation to false in the schema file.
-- You must correctly type your code so that it passes the type checker.
-- You must handle null / undefined cases of your convex queries for both frontend and backend, or else it will throw an error that your data could be null or undefined.
-- Always use the `@/folder` path, with `@/convex/folder/file.ts` syntax for importing convex files.
-- This includes importing generated files like `@/convex/_generated/server`, `@/convex/_generated/api`
-- Remember to import functions like useQuery, useMutation, useAction, etc. from `convex/react`
-- NEVER have return type validators.
+### Sample Tutor Insight (post-session)
+
+```text
+STRENGTH            Vocabulary in context
+PRIMARY SKILL       Evidence-based inference
+DIFFICULTY          Missed textual evidence
+INTERVENTION        Guided rereading with evidence highlighting
+OUTCOME             Correct reasoning after intervention
+NEXT ACTIVITY       Practice another evidence-based inference
+```
+
+---
+
+## 🏗️ Tech Stack
+
+| Layer | Technology |
+|---|---|
+| **Frontend** | React.js, Vite, JavaScript, HTML5, CSS, fully responsive |
+| **AI Reasoning** | OpenRouter → NVIDIA Nemotron |
+| **State & Storage** | Browser session state, LocalStorage persistence, no forced account creation |
+| **Browser Capabilities** | Microphone / speech interaction |
+
+---
+
+## 🏛️ Architecture
+
+```text
+┌────────────────────────────┐
+│          React UI          │   Home · Cases · Reading · Rewind
+│                            │   Clues · Progress · Insights
+└──────────────┬─────────────┘
+               ↓
+┌────────────────────────────┐
+│       Learner State        │   Fluency · Comprehension · Vocabulary
+│                            │   Error Patterns · Interventions · Progress
+└──────────────┬─────────────┘
+               ↓
+┌────────────────────────────┐
+│      AI Service Layer      │   Prompt Construction · OpenRouter Request
+│                            │   JSON Parsing · Validation · Fallback
+└──────────────┬─────────────┘
+               ↓
+┌────────────────────────────┐
+│      NVIDIA Nemotron       │   Analyze → Explain → Intervene → Adapt
+└────────────────────────────┘
+```
+
+**AI decision loop:** `Observe → Understand → Identify Difficulty → Intervene → Retry → Measure → Adapt`
+
+---
+
+## ⚙️ Getting Started
+
+```bash
+# 1. Clone the repo
+git clone https://github.com/your-username/detective-rewind.git
+cd detective-rewind
+
+# 2. Install dependencies
+npm install
+
+# 3. Configure environment variables
+cp .env.example .env
+# Add your OpenRouter API key:
+# VITE_OPENROUTER_API_KEY=your_key_here
+# VITE_OPENROUTER_MODEL=nvidia/nemotron-...
+
+# 4. Run locally
+npm run dev
+```
+
+Open `http://localhost:5173` and start your first case.
+
+---
+
+## 🎨 Design Language
+
+Cream / warm off-white backgrounds, deep navy UI elements, and gold/amber investigation accents — evidence cards, case-file layouts, and clue boards, built responsively for `375px → 1920px+`.
+
+> Goal: **a premium AI learning product, disguised as a detective investigation.**
+
+---
+
+## 🚀 Roadmap
+
+- [ ] **Expanded Case Library** — more stories across levels, genres, themes
+- [ ] **Deeper Speech Analysis** — richer oral-reading feedback with ASR-uncertainty handling
+- [ ] **Personalized Reading Paths** — long-term adaptation from learner history
+- [ ] **Multilingual Scaffolding** — optional Tamil (and other) support for concept clarification, English-first
+- [ ] **Tutor Dashboards** — evidence-linked learning histories for teachers
+- [ ] **Real-World Validation** — pilot testing the rewind loop with learners and tutors
+
+---
+
+## 📌 Project Status
+
+**Prototype — Hackathon Build**
+
+<details>
+<summary><b>Completed features</b> (click to expand)</summary>
+
+- [x] Interactive mystery cases
+- [x] Reading + oral reading interaction
+- [x] Comprehension questions
+- [x] Evidence-based reasoning
+- [x] AI evaluation + AI Rewind
+- [x] Adaptive interventions
+- [x] Learner modeling & error-pattern tracking
+- [x] Vocabulary in context
+- [x] Progressive, locked case levels
+- [x] Gamified investigation rewards
+- [x] Tutor Action Card / learning insights
+- [x] Structured AI JSON handling with validation & fallback
+- [x] Fully responsive UI
+
+</details>
+
+---
+
+## 👥 Target Learners
+
+Built primarily for **young English learners, ages ~7–10**, bridging:
+
+```
+Basic Reading Practice → Fluency → Comprehension → Inference → Independent Reading
+```
+
+---
+
+## 🏁 Hackathon Demo Flow
+
+1. Open a mystery case → read a witness statement aloud
+2. Answer a comprehension question — **intentionally get it wrong**
+3. Watch AI Rewind trigger: difficulty detected → evidence highlighted → guided retry
+4. Unlock the clue after success → see the adaptive next challenge
+5. View the Tutor Action Card → unlock the next level
+
+**The hero moment:** *wrong answer → AI understands why → story rewinds → learner gets targeted help → learner succeeds → mystery continues.*
+
+---
+
+## 💬 Closing Thought
+
+> Don't just tell learners they're wrong. **Understand why, help them recover, and let them try again.**
+
+**Read. Rewind. Learn. Solve.**
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).
+
+<div align="center">
+
+Made with 🔦 for readers who deserve better than "Try Again."
+
+</div>
