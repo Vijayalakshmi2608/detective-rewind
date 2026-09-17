@@ -7,6 +7,8 @@ import React, { StrictMode, useEffect, lazy, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router";
 import "./index.css";
+import { GameProvider } from "@/lib/gameContext";
+import { GameNav } from "@/components/GameNav";
 
 // Lazy load route components
 const Landing = lazy(() => import("./pages/Landing.tsx"));
@@ -97,25 +99,26 @@ function RouteSyncer() {
   return null;
 }
 
-import { GameProvider } from "@/lib/gameContext";
-import { GameNav } from "@/components/GameNav";
-
-function GameRoutes() {
+/** Wraps pages that need game state + bottom nav */
+function GameLayout({ children }: { children: React.ReactNode }) {
   return (
     <GameProvider>
-      <Routes>
-        <Route path="/home" element={<DetectiveHome />} />
-        <Route path="/case" element={<CaseBoard />} />
-        <Route path="/reading" element={<ReadingScene />} />
-        <Route path="/clues" element={<ClueBoard />} />
-        <Route path="/vocabulary" element={<VocabClues />} />
-        <Route path="/progress" element={<Progress />} />
-        <Route path="/tutor" element={<TutorInsights />} />
-      </Routes>
+      {children}
       <GameNav />
     </GameProvider>
   );
 }
+
+/** Pages that need game state */
+const gamePages = [
+  { path: "/home", Component: DetectiveHome },
+  { path: "/case", Component: CaseBoard },
+  { path: "/reading", Component: ReadingScene },
+  { path: "/clues", Component: ClueBoard },
+  { path: "/vocabulary", Component: VocabClues },
+  { path: "/progress", Component: Progress },
+  { path: "/tutor", Component: TutorInsights },
+];
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -129,13 +132,17 @@ createRoot(document.getElementById("root")!).render(
           <Suspense fallback={<RouteLoading />}>
             <Routes>
               <Route path="/" element={<Landing />} />
-              <Route path="/home" element={<GameRoutes />} />
-              <Route path="/case" element={<GameRoutes />} />
-              <Route path="/reading" element={<GameRoutes />} />
-              <Route path="/clues" element={<GameRoutes />} />
-              <Route path="/vocabulary" element={<GameRoutes />} />
-              <Route path="/progress" element={<GameRoutes />} />
-              <Route path="/tutor" element={<GameRoutes />} />
+              {gamePages.map(({ path, Component }) => (
+                <Route
+                  key={path}
+                  path={path}
+                  element={
+                    <GameLayout>
+                      <Component />
+                    </GameLayout>
+                  }
+                />
+              ))}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
