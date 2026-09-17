@@ -1,11 +1,10 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router";
-import { useAuth } from "@/hooks/use-auth";
 import { useGame } from "@/lib/gameContext";
 import { getRank, RANKS } from "@/lib/gameData";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, CheckCircle2, Circle, Trophy } from "lucide-react";
+import { ArrowRight, CheckCircle2, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const fadeUp = {
@@ -16,7 +15,6 @@ const fadeUp = {
 
 export default function Progress() {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const { state } = useGame();
   const rank = getRank(state.score);
 
@@ -140,7 +138,7 @@ export default function Progress() {
           <Card className="border-0 bg-card shadow-card">
             <CardContent className="p-4 sm:p-5">
               <div className="space-y-3">
-                {RANKS.map((r, i) => {
+                {RANKS.map((r) => {
                   const isActive = rank.name === r.name;
                   const isUnlocked = state.score >= r.minScore;
                   return (

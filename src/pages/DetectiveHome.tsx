@@ -1,6 +1,5 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router";
-import { useAuth } from "@/hooks/use-auth";
 import { useGame } from "@/lib/gameContext";
 import { getRank } from "@/lib/gameData";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,7 @@ import {
   Card,
   CardContent,
 } from "@/components/ui/card";
-import { ArrowRight, ChevronRight, LogOut, Shield, Zap, Search, BookOpen } from "lucide-react";
+import { ArrowRight, ChevronRight, Shield, Zap, Search, BookOpen } from "lucide-react";
 
 const fadeUp = {
   initial: { opacity: 0, y: 16 },
@@ -18,34 +17,20 @@ const fadeUp = {
 
 export default function DetectiveHome() {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
   const { state } = useGame();
   const rank = getRank(state.score);
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
-  };
 
   return (
     <main className="min-h-screen bg-background pb-28">
       {/* Header */}
       <header className="px-5 pt-8 pb-5 sm:px-8 sm:pt-10">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gold">
-              Detective Agency
-            </p>
-            <h1 className="mt-1.5 text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
-              Welcome{user?.name ? `, ${user.name}` : ""}
-            </h1>
-          </div>
-          <button
-            onClick={handleSignOut}
-            className="rounded-xl p-2.5 text-muted-foreground transition-all duration-200 hover:bg-secondary hover:text-foreground"
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gold">
+            Detective Agency
+          </p>
+          <h1 className="mt-1.5 text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
+            Welcome, Detective
+          </h1>
         </div>
       </header>
 

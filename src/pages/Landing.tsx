@@ -82,7 +82,7 @@ export default function Landing() {
           {/* CTA */}
           <motion.div variants={fadeUp} className="mt-10 space-y-3">
             <Button
-              onClick={() => navigate("/auth")}
+              onClick={() => navigate("/home")}
               size="lg"
               className="w-full h-14 rounded-2xl text-base font-bold bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:translate-y-[-1px]"
             >
@@ -90,7 +90,7 @@ export default function Landing() {
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
             <Button
-              onClick={() => navigate("/auth")}
+              onClick={() => navigate("/home")}
               variant="ghost"
               size="lg"
               className="w-full h-12 rounded-2xl text-sm font-medium text-muted-foreground hover:text-foreground"

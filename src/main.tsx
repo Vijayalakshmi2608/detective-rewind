@@ -1,6 +1,5 @@
 import '@vly-ai/integrations';
 import { Toaster } from "@/components/ui/sonner";
-import { RequireAuth } from "@/components/RequireAuth";
 import { VlyToolbar } from "../vly-toolbar-readonly.tsx";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { ConvexReactClient } from "convex/react";
@@ -11,7 +10,6 @@ import "./index.css";
 
 // Lazy load route components
 const Landing = lazy(() => import("./pages/Landing.tsx"));
-const AuthPage = lazy(() => import("./pages/Auth.tsx"));
 const DetectiveHome = lazy(() => import("./pages/DetectiveHome.tsx"));
 const CaseBoard = lazy(() => import("./pages/CaseBoard.tsx"));
 const ReadingScene = lazy(() => import("./pages/ReadingScene.tsx"));
@@ -99,7 +97,6 @@ function RouteSyncer() {
   return null;
 }
 
-/** Wrapper that provides GameProvider only for game routes */
 import { GameProvider } from "@/lib/gameContext";
 import { GameNav } from "@/components/GameNav";
 
@@ -132,66 +129,13 @@ createRoot(document.getElementById("root")!).render(
           <Suspense fallback={<RouteLoading />}>
             <Routes>
               <Route path="/" element={<Landing />} />
-              <Route
-                path="/auth"
-                element={<AuthPage redirectAfterAuth="/home" />}
-              />
-              <Route
-                path="/dashboard"
-                element={
-                  <RequireAuth>
-                    <GameRoutes />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/home"
-                element={
-                  <RequireAuth>
-                    <GameRoutes />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/case"
-                element={
-                  <RequireAuth>
-                    <GameRoutes />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/reading"
-                element={
-                  <RequireAuth>
-                    <GameRoutes />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/clues"
-                element={
-                  <RequireAuth>
-                    <GameRoutes />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/vocabulary"
-                element={
-                  <RequireAuth>
-                    <GameRoutes />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/progress"
-                element={
-                  <RequireAuth>
-                    <GameRoutes />
-                  </RequireAuth>
-                }
-              />
+              <Route path="/home" element={<GameRoutes />} />
+              <Route path="/case" element={<GameRoutes />} />
+              <Route path="/reading" element={<GameRoutes />} />
+              <Route path="/clues" element={<GameRoutes />} />
+              <Route path="/vocabulary" element={<GameRoutes />} />
+              <Route path="/progress" element={<GameRoutes />} />
+              <Route path="/tutor" element={<GameRoutes />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
